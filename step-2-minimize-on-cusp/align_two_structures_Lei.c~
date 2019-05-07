@@ -1,0 +1,60 @@
+/* This code aligns tw ostructures in vmd xyz format.
+ * It uses Lei Huang's code for alignment.*/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <time.h>
+
+
+/* Align two data sets. The reference array(s) has dimension one more than the number of atoms.
+ * This is necause Lei uses 1-based arrays, not 0-based.
+ * THIS IS IMPORTANT TO KEEP STRAIGHT. LEI'S ROUTINE WORKS WITH ARRAYS WHOSE INDEX START FROM
+ * 1 NOT ZERO.
+ *
+ * After alignemnt the coordinates are other structures are overwritten with new coordinates.
+ * The reference arrays should have been allocated before.*/
+Align_two_structures_lei(double *Reference_x, double *Reference_y, double *Reference_z, FR_DAT *other_fr)
+{
+  int i;
+  double *Other_x, *Other_y, *Other_z;
+
+  /*Lei's routines uses arrays whose indices start from 1.*/
+  Other_x = (double*)malloc((other_fr->natoms+1) * sizeof(double));
+  Other_y = (double*)malloc((other_fr->natoms+1) * sizeof(double));
+  Other_z = (double*)malloc((other_fr->natoms+1) * sizeof(double));
+
+  /*Copy the coordinates of the other structure*/
+  for(i = 0 ; i < other_fr->natoms; i++)
+    {
+      Other_x[i+1] = other_fr->x[i][0];
+      Other_y[i+1] = other_fr->x[i][1];
+      Other_z[i+1] = other_fr->x[i][2]; 
+    }
+
+  /*This routine is from Lei and does the alignment*/
+
+  
+  /*Copy new cooridinates back*/
+  for(i = 0 ; i < other_fr->natoms; i++)
+    {
+      other_fr->x[i][0] = Other_x[i+1];
+      other_fr->x[i][1] = Other_y[i+1];
+      other_fr->x[i][2] = Other_z[i+1];
+    }
+
+  free(Other_x);
+  free(Other_y);
+  free(Other_z);
+}
+
+
+
+
+
+
+
+
+

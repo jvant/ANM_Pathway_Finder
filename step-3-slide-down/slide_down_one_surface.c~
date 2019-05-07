@@ -1,0 +1,187 @@
+/* Starting from the energy minimized strucutre on the cusp region (the transition
+   state) this program performs the following task
+   1. Slides down on one well.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#include <string.h>
+
+#include "include_all.h"
+
+
+/* Input filename: 'INPUT_SLIDE_ONE_SURFACE'
+ * Format:
+ * ---------------------------
+ *  NUM_PARTICLES (Number of particles in the system. %d)
+ *  SURFACE_INDEX (1 or 2. %d)
+ *  CUT_OFF (Cutoff. %lf)
+ *  FORCE_CONSTANT (Force constant. %lf)
+ *  INITIAL_STEP_SIZE (Initial step size for steepest descent minimization. %lf)
+ *  MAX_NUM_ITER_ONE_STRUCT (Maximum number of iterations for generating one structure. %lu)
+ *  RMSD_PATHWAY (RMSD of two successive strucutres in the pathway. %lf)
+ *  STEP_SIZE_REDUCTION_FACTOR_OUTER (factor for outer loop. %lf)
+ *  STEP_SIZE_REDUCTION_FACTOR_INNER (factor for inner loop. %lf)
+ *  RMSD_DIFF_TOL (Two rmsd values are same if they differ by less than this. %lf)
+ *  MACHINE_ZERO (Machine precision. %lf)
+ *  MAX_NUM_ITER_ALL_STRUCT (Maximum number of iterations for generating all structures. %lu)
+ * ---------------------------
+ * */
+
+void Read_input(int *Num_particles, int *struct_index, double *cutoff, double *force_constant, double *step_size_start, long int *Max_num_iterations_one_step, double *rmsd_pathway, double *factor_step_size_reduce_outer, double *factor_step_size_reduce_inner, double *delta_rmsd_zero, double *machine_zero, long int *Max_num_iterations_overall)
+{
+  FILE *in;
+  char key[1000];
+  in = fopen("INPUT_SLIDE_ONE_SURFACE", "r");
+  if(in == NULL)
+    {
+      printf("File 'INPUT_SLIDE_ONE_SURFACE' not found\n");
+      exit(1);
+    }
+  fscanf(in, "%s %d", key, Num_particles);
+  fscanf(in, "%s %d", key, struct_index);
+  fscanf(in, "%s %lf", key, cutoff);
+  fscanf(in, "%s %lf", key, force_constant);
+  fscanf(in, "%s %lf", key, step_size_start);
+  fscanf(in, "%s %lu", key, Max_num_iterations_one_step);
+  fscanf(in, "%s %lf", key, rmsd_pathway);
+  fscanf(in, "%s %lf", key, factor_step_size_reduce_outer);
+  fscanf(in, "%s %lf", key, factor_step_size_reduce_inner);
+  fscanf(in, "%s %lf", key, delta_rmsd_zero);
+  fscanf(in, "%s %lf", key, machine_zero);
+  fscanf(in, "%s %lu", key, Max_num_iterations_overall);
+  fclose(in);
+}
+
+
+int main()
+{
+  int Num_particles;
+  int struct_index;
+  double cutoff;
+  double force_constant;
+  double step_size_start;
+  long int Max_num_iterations_one_step;
+  double rmsd_pathway;
+  double factor_step_size_reduce_outer;
+  double factor_step_size_reduce_inner;
+  double delta_rmsd_zero;
+  double machine_zero;
+  long int Max_num_iterations_overall;
+
+  double rmsd_diff_consecutive_cal, rmsd_from_end_point;
+  FR_DAT fr_ref, fr_ref_for_alignment, fr_ts, fr_start_one, fr_end_one; 
+  double **pair_distances_structure;
+  char Filename[1000];
+  int i;
+  double *Reference_x, *Reference_y, *Reference_z;
+  int Num_struct_written;
+
+  /********************************************************************************/
+
+  Read_input(&Num_particles, &struct_index, &cutoff, &force_constant, &step_size_start, &Max_num_iterations_one_step, &rmsd_pathway, &factor_step_size_reduce_outer, &factor_step_size_reduce_inner, &delta_rmsd_zero, &machine_zero, &Max_num_iterations_overall);
+
+  pair_distances_structure = (double**)malloc(Num_particles * sizeof(double*));
+  for(i = 0 ; i < Num_particles ; i++)
+    {
+      pair_distances_structure[i] = (double*)malloc(Num_particles * sizeof(double));
+    }
+
+  fr_ref.natoms = Num_particles;
+  fr_ref.x = (rvec*)malloc(Num_particles * sizeof(rvec));
+  fr_ref_for_alignment.natoms = Num_particles;
+  fr_ref_for_alignment.x = (rvec*)malloc(Num_particles * sizeof(rvec));
+  fr_ts.natoms = Num_particles;
+  fr_ts.x = (rvec*)malloc(Num_particles * sizeof(rvec));
+  fr_start_one.natoms = Num_particles;
+  fr_start_one.x = (rvec*)malloc(Num_particles * sizeof(rvec));
+  fr_end_one.natoms = Num_particles;
+  fr_end_one.x = (rvec*)malloc(Num_particles * sizeof(rvec));
+  fr_end_one.f = (rvec*)malloc(Num_particles * sizeof(rvec));
+
+  /*Lei's code uses array whose indices start from 1.*/
+  Reference_x = (double*)malloc((Num_particles + 1) * sizeof(double));
+  Reference_y = (double*)malloc((Num_particles + 1) * sizeof(double));
+  Reference_z = (double*)malloc((Num_particles + 1) * sizeof(double));
+
+  /********************************************************************************/
+
+  sprintf(Filename, "INPUT_STRUCTURE_%d", struct_index);
+  Read_config_simple_3d(Num_particles, &fr_ref, Filename);
+
+  sprintf(Filename, "minimized_struct_on_cusp");
+  Read_config_simple_3d(Num_particles, &fr_ts, Filename);
+
+  sprintf(Filename, "REFERENCE_FOR_ALIGNMENT");
+  Read_config_simple_3d(Num_particles, &fr_ref_for_alignment, Filename);
+  for(i = 0 ; i < Num_particles ; i++)
+    {
+      Reference_x[i+1] = fr_ref_for_alignment.x[i][0];
+      Reference_y[i+1] = fr_ref_for_alignment.x[i][1];
+      Reference_z[i+1] = fr_ref_for_alignment.x[i][2];
+    }
+
+  Align_two_structures_lei(Reference_x, Reference_y, Reference_z, &fr_ref);
+  Align_two_structures_lei(Reference_x, Reference_y, Reference_z, &fr_ts);
+
+  Calc_pair_distances_one_structure(Num_particles, fr_ref, pair_distances_structure);
+
+  for(i = 0 ; i < Num_particles ; i++)
+    {
+      fr_start_one.x[i][0] = fr_ts.x[i][0];
+      fr_start_one.x[i][1] = fr_ts.x[i][1];
+      fr_start_one.x[i][2] = fr_ts.x[i][2];
+    }
+
+  /* Loop for all strucutres*/
+  iteration_number = 0;
+  is_complete = 0;
+  Num_struct_written = 0;
+  do
+    {
+      /* One strucutre*/
+      Slide_down_by_one_structure(Num_particles, force_constant, cutoff, pair_distances_structure, Max_num_iterations_one_step, Reference_x, Reference_y, Reference_z, rmsd_pathway, factor_step_size_reduce_outer, factor_step_size_reduce_inner, delta_rmsd_zero, machine_zero, &fr_start_one, step_size_start, &fr_end_one);
+      /* Calculate rmsd from the previous strucutre*/
+      rmsd_diff_consecutive_cal = Calc_rmsd_one_structure(&fr_end_one, &fr_start_one);
+      /* Write strucutre*/
+      Num_struct_written = Num_struct_written + 1;
+      sprintf(Filename, "OUT_COORDS_SURFACE_%d_%d", struct_index, Num_struct_written);
+      /* Copy end strucutre to start strucutre for the next iteration*/
+      for(i = 0 ; i < Num_particles ; i++)
+	{
+	  fr_end_one.x[i][0] =  fr_start_one.x[i][0];
+	  fr_end_one.x[i][0] =  fr_start_one.x[i][1];
+	  fr_end_one.x[i][0] =  fr_start_one.x[i][2];
+	}
+    }while((is_complete == 0) && (iteration_number <= Max_num_iterations_overall));
+  
+
+  double rmsd_consecutive;
+  out_rmsd = fopen("consecutive_rmsd", "w");
+  for(i = 0 ; i < (Num_struct_in_pathway-1) ; i++)
+    {
+      sprintf(Filename, "COORDS_IMAGE_%d", (i+1));
+      Read_config_simple_3d(Num_particles, &fr_1, Filename);
+      sprintf(Filename, "COORDS_IMAGE_%d", (i+2));
+      Read_config_simple_3d(Num_particles, &fr_2, Filename);
+      rmsd_consecutive = Calc_rmsd_one_structure(&fr_1, &fr_2); 
+      fprintf(out_rmsd, "%.8f\n", rmsd_consecutive);
+    }
+  fclose(out_rmsd);
+
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
