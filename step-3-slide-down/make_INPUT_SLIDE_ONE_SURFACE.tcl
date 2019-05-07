@@ -3,7 +3,7 @@
 set STATE1 [lindex $argv 0]
 mol new $STATE1
 set selCA [atomselect top "name CA"]
-set num_CA [selCA num]
+set num_CA [$selCA num]
 
 set "outfile" [open "INPUT_SLIDE_ONE_SURFACE" w]
 puts $outfile "NUM_PARTICLES $num_CA"

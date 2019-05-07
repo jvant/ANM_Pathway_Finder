@@ -1,0 +1,6 @@
+Input filename for end point 1: CorA_firstframe.pdb
+Input filename for end point 2: CorA_lastframe.pdb
+String used for VMD atom selection: (chain A and name CA and resid 1 to 331 ) or (chain B and name CA and resid 1 to 330 ) or (chain C and name CA and resid 1 to 332 ) or (chain D and name CA and resid 1 to 333 ) or (chain E and name CA and resid 1 to 331 )
+Number of atoms: 1574
+Intial RMSD: 13.049985885620117
+RMSD after alignment: 9.524202346801758
