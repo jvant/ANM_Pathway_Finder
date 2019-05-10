@@ -1,4 +1,5 @@
 *.pdb
+*.cif
 INPUT_STRUCTURE_*
 OUT_COORDS_SURFACE*
 num_structures_written*
