@@ -67,7 +67,7 @@ cd ../
 
 # Step 3
 echo " "
-echo "Starting step 4"
+echo "Starting step 3"
 echo " "
 
 cd ./step-3-slide-down 
@@ -81,11 +81,11 @@ sed -i s/SURFACE_INDEX\ 1/SURFACE_INDEX\ 2/ INPUT_SLIDE_ONE_SURFACE
 ./3_desc_one_surface_v2
 cd ..
 echo " "
-echo "Step 4 is done"
+echo "Step 3 is done"
 echo " "
 # Step 4
 echo " "
-
+echo "Starting step 4"
 echo " "
 cd ./step-4-collect-structures
 cp ../INPUT_STRUCTURE_1 .
