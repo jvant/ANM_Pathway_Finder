@@ -77,12 +77,17 @@ cp ../step-2-minimize-on-cusp/minimized_struct_on_cusp .
 cp ../REFERENCE_FOR_ALIGNMENT .
 vmd -dispdev text -eofexit < make_INPUT_SLIDE_ONE_SURFACE.tcl -args ../1_CA.pdb
 ./3_desc_one_surface_v2
+
+echo " "
+echo "Starting step 3 second decent"
+echo " "
 sed -i s/SURFACE_INDEX\ 1/SURFACE_INDEX\ 2/ INPUT_SLIDE_ONE_SURFACE
 ./3_desc_one_surface_v2
 cd ..
 echo " "
 echo "Step 3 is done"
 echo " "
+
 # Step 4
 echo " "
 echo "Starting step 4"
